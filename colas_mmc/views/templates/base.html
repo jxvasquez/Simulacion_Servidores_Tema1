@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+{#
+=============================================================================
+  views/templates/base.html
+  ---------------------------------------------------------------------------
+  PLANTILLA BASE.
+  Contiene lo que se repite en todas las páginas: la cabecera <head>,
+  el encabezado superior y el pie de página.
+
+  Las otras plantillas "heredan" de esta con la instrucción extends
+  y rellenan los espacios marcados con bloques (block ... endblock).
+
+  Nota: los comentarios entre llaves y numeral son comentarios de Jinja2;
+  no aparecen en el HTML que recibe el navegador.
+=============================================================================
+#}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block titulo %}Atención en ventanillas{% endblock %}</title>
+
+    <!-- Tipografía Atkinson Hyperlegible: diseñada para leerse con facilidad.
+         Si no hay internet, el navegador usa su letra del sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+          rel="stylesheet">
+
+    <!-- url_for('static', ...) arma la ruta correcta hacia views/static/ -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+
+<body>
+
+    <!-- ===================== ENCABEZADO ===================== -->
+    <header class="encabezado">
+        <div class="encabezado-contenido">
+            <h1>Atención en ventanillas</h1>
+            <p>
+                Modelo de colas M/M/c para decidir cuántas ventanillas abrir
+                en la atención a estudiantes.
+            </p>
+        </div>
+    </header>
+
+    <!-- ===================== CONTENIDO ===================== -->
+    <main class="contenedor">
+        {% block contenido %}{% endblock %}
+    </main>
+
+    <!-- ===================== PIE DE PÁGINA ===================== -->
+    <footer class="pie">
+        <p>
+            Resultados teóricos con fórmulas exactas de M/M/c y verificados con
+            una simulación Monte Carlo de {{ config.REPLICAS }} réplicas.
+        </p>
+    </footer>
+
+    <!-- El JavaScript se carga al final para que el HTML ya exista -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

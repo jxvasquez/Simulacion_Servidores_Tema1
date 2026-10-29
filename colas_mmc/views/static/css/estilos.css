@@ -1,0 +1,833 @@
+
+:root {
+    --fondo: #F2F7FD;            /* fondo azul muy suave */
+    --superficie: #FFFFFF;       /* fondo de tarjetas */
+    --superficie-suave: #EAF3FD; /* azul claro en los mostradores */
+    --linea: #CFDEF0;            /* bordes azul grisáceo */
+
+    --tinta: #19304D;            /* texto principal */
+    --tinta-suave: #5C718A;      /* texto secundario */
+
+    --pizarra: #173B68;          /* azul marino del encabezado */
+    --acento: #3E7CB8;           /* botones y utilización */
+    --acento-oscuro: #285D94;
+
+    --cumple: #2E8B57;           /* verde: cumple la meta */
+    --cumple-fondo: #E5F2EA;
+    --no-cumple: #B23B2E;        /* rojo: no cumple */
+    --no-cumple-fondo: #F7E7E4;
+    --inestable: #8A949C;        /* gris: inestable */
+    --inestable-fondo: #EDEFF0;
+
+    --radio: 10px;               /* redondeo de las esquinas */
+    --letra: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+
+/* ---------------------------------------------------------------------------
+   2. ESTILOS GENERALES
+   --------------------------------------------------------------------------- */
+
+/* box-sizing: el ancho incluye el borde y el relleno (más fácil de calcular) */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font-family: var(--letra);
+    font-size: 17px;
+    line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+    line-height: 1.2;
+    margin: 0;
+}
+
+/* Números alineados en columnas (todos los dígitos del mismo ancho) */
+.dato-valor,
+.datos dd,
+.tabla td {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Contorno visible al navegar con el teclado (accesibilidad) */
+:focus-visible {
+    outline: 3px solid var(--acento);
+    outline-offset: 2px;
+}
+
+
+/* ---------------------------------------------------------------------------
+   3. ENCABEZADO Y PIE
+   --------------------------------------------------------------------------- */
+.encabezado {
+    background: var(--pizarra);
+    color: #F6FAFF;
+    padding: 2.25rem 1.25rem 2.5rem;
+}
+
+.encabezado-contenido {
+    max-width: 1240px;
+    margin: 0 auto;
+}
+
+.encabezado h1 {
+    font-size: 2.1rem;
+    letter-spacing: -0.01em;
+}
+
+.encabezado p {
+    margin: 0.5rem 0 0;
+    max-width: 60ch;
+    color: #D1E6FC;
+}
+
+.pie {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 2.5rem;
+    color: var(--tinta-suave);
+    font-size: 0.9rem;
+}
+
+
+/* ---------------------------------------------------------------------------
+   4. DISPOSICIÓN EN DOS COLUMNAS
+   Panel de datos a la izquierda (fijo al hacer scroll), resultados a la derecha.
+   --------------------------------------------------------------------------- */
+.contenedor {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+}
+
+.disposicion {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+    margin-top: -1.25rem;   /* el panel "monta" un poco sobre el encabezado */
+}
+
+
+/* ---------------------------------------------------------------------------
+   5. FORMULARIO
+   --------------------------------------------------------------------------- */
+.panel-datos {
+    position: sticky;
+    top: 1rem;
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    padding: 1.5rem;
+}
+
+.panel-datos h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1.25rem;
+}
+
+.campo {
+    margin: 0 0 1.25rem;
+    padding: 0;
+    border: 0;
+}
+
+.campo > label,
+.campo legend {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    padding: 0;
+}
+
+.simbolo {
+    color: var(--acento);
+    font-weight: 700;
+}
+
+/* Selector de unidad como "interruptor" de dos opciones */
+.selector-unidad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1.5px solid var(--linea);
+    border-radius: 8px;
+    padding: 3px;
+    background: var(--superficie-suave);
+}
+
+.selector-unidad label {
+    position: relative;
+    cursor: pointer;
+}
+
+/* El círculo del radio se oculta visualmente, pero sigue siendo usable */
+.selector-unidad input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+}
+
+.selector-unidad span {
+    display: block;
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    color: var(--tinta-suave);
+}
+
+.selector-unidad input:checked + span {
+    background: var(--superficie);
+    color: var(--tinta);
+    font-weight: 700;
+    box-shadow: 0 0 0 1px var(--linea);
+}
+
+.selector-unidad input:focus-visible + span {
+    outline: 3px solid var(--acento);
+}
+
+/* Caja de texto con la unidad pegada a la derecha */
+.entrada-con-unidad {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid var(--linea);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--superficie);
+}
+
+.entrada-con-unidad:focus-within {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 3px rgba(62, 124, 184, 0.18);
+}
+
+.entrada-con-unidad input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    padding: 0.6rem 0.75rem;
+    font: inherit;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--tinta);
+    background: transparent;
+}
+
+.entrada-con-unidad input:focus {
+    outline: none;   /* el borde del contenedor ya indica el foco */
+}
+
+.entrada-con-unidad input[aria-invalid="true"] {
+    background: var(--no-cumple-fondo);
+}
+
+.unidad {
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    background: var(--superficie-suave);
+    color: var(--tinta-suave);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    border-left: 1px solid var(--linea);
+}
+
+.ayuda {
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+    color: var(--tinta-suave);
+}
+
+/* Pista en vivo (la escribe JavaScript) */
+.pista {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: var(--tinta-suave);
+    min-height: 1.4em;
+}
+
+.pista strong {
+    color: var(--tinta);
+}
+
+.pista.pista-alerta {
+    color: var(--no-cumple);
+}
+
+.error-cliente {
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background: var(--no-cumple-fondo);
+    color: var(--no-cumple);
+    font-size: 0.92rem;
+}
+
+.boton-principal {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--acento);
+    color: #FFFFFF;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-principal:hover {
+    background: var(--acento-oscuro);
+}
+
+.boton-principal:disabled {
+    opacity: 0.75;
+    cursor: progress;
+}
+
+/* Ejemplos rápidos */
+.ejemplos {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--linea);
+}
+
+.ejemplos p {
+    margin: 0 0 0.6rem;
+    font-size: 0.9rem;
+    color: var(--tinta-suave);
+}
+
+.lista-ejemplos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.ejemplo {
+    border: 1.5px solid var(--linea);
+    background: var(--superficie);
+    color: var(--tinta);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.ejemplo:hover {
+    border-color: var(--acento);
+    color: var(--acento);
+}
+
+
+/* ---------------------------------------------------------------------------
+   6. VEREDICTO Y AVISOS
+   --------------------------------------------------------------------------- */
+.zona-resultados {
+    min-width: 0;          /* evita que la tabla ancha desborde la cuadrícula */
+    padding-top: 1.25rem;
+    transition: opacity 0.2s;
+}
+
+/* Mientras se calcula, los resultados viejos se atenúan */
+.zona-resultados[aria-busy="true"] {
+    opacity: 0.45;
+}
+
+.veredicto {
+    border-left: 6px solid;
+    border-radius: var(--radio);
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1.75rem;
+    background: var(--superficie);
+}
+
+.veredicto p {
+    margin: 0.3rem 0 0;
+    max-width: 70ch;
+}
+
+.veredicto-titulo {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0 !important;
+}
+
+.veredicto-ok {
+    border-color: var(--cumple);
+}
+
+.veredicto-ok .veredicto-titulo {
+    color: var(--cumple);
+}
+
+.veredicto-mal {
+    border-color: var(--no-cumple);
+}
+
+.veredicto-mal .veredicto-titulo {
+    color: var(--no-cumple);
+}
+
+.veredicto-carga {
+    color: var(--tinta-suave);
+    font-size: 0.92rem;
+}
+
+.aviso-error {
+    background: var(--no-cumple-fondo);
+    border: 1px solid var(--no-cumple);
+    border-radius: var(--radio);
+    padding: 1rem 1.4rem;
+    color: var(--no-cumple);
+}
+
+.aviso-error h2 {
+    font-size: 1.1rem;
+}
+
+.aviso-error ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+}
+
+
+/* ---------------------------------------------------------------------------
+   7. TARJETAS DE ESCENARIOS
+   --------------------------------------------------------------------------- */
+.escenarios {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.escenario {
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-top: 5px solid var(--inestable);
+    border-radius: var(--radio);
+    padding: 1.1rem 1.2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Color de la franja superior según el estado */
+.escenario-cumple {
+    border-top-color: var(--cumple);
+}
+
+.escenario-no-cumple {
+    border-top-color: var(--no-cumple);
+}
+
+.escenario-inestable {
+    border-style: dashed;
+    border-top-style: solid;
+}
+
+/* La recomendada tiene un marco azul; verde solo para mostrar que cumple */
+.escenario-recomendado {
+    border: 2px solid var(--acento);
+    border-top-width: 5px;
+    box-shadow: 0 0 0 4px var(--superficie-suave);
+}
+
+.escenario-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.escenario-cabecera {
+    flex-wrap: wrap;
+}
+
+.escenario-cabecera h3 {
+    font-size: 1.2rem;
+    white-space: nowrap;
+}
+
+.insignia {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+}
+
+.insignia-recomendada {
+    background: var(--pizarra);
+    color: #FFFFFF;
+}
+
+/* --- Dibujo del mostrador ------------------------------------------------
+   Arriba: las ventanillas. Cada una se "llena" de azul según la
+   utilización ρ (variable --ocupacion que viene desde la plantilla).
+   Abajo: un punto por cada estudiante esperando en promedio (Lq). */
+.mostrador {
+    background: var(--superficie-suave);
+    border-radius: 8px;
+    padding: 0.85rem 0.85rem 0.75rem;
+}
+
+.ventanillas {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--tinta);   /* el mostrador */
+}
+
+.ventanilla {
+    flex: 1;
+    max-width: 44px;
+    height: 34px;
+    border: 2px solid var(--tinta);
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    /* Relleno desde abajo hasta el porcentaje de ocupación */
+    background: linear-gradient(
+        to top,
+        var(--acento) var(--ocupacion),
+        var(--superficie) var(--ocupacion)
+    );
+}
+
+.fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    min-height: 22px;
+    padding-top: 0.6rem;
+}
+
+.persona {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--tinta-suave);
+}
+
+.escenario-no-cumple .persona {
+    background: var(--no-cumple);
+}
+
+.escenario-inestable .persona {
+    background: var(--inestable);
+}
+
+.fila-mas,
+.fila-vacia {
+    font-size: 0.82rem;
+    color: var(--tinta-suave);
+    margin-left: 2px;
+}
+
+/* --- Indicador principal Wq --- */
+.dato-principal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.dato-etiqueta {
+    font-size: 0.88rem;
+    color: var(--tinta-suave);
+}
+
+.dato-valor {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.dato-valor small {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--tinta-suave);
+}
+
+.estado {
+    align-self: flex-start;
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+}
+
+.estado-cumple {
+    background: var(--cumple-fondo);
+    color: var(--cumple);
+}
+
+.estado-no-cumple {
+    background: var(--no-cumple-fondo);
+    color: var(--no-cumple);
+}
+
+.estado-inestable {
+    background: var(--inestable-fondo);
+    color: var(--tinta-suave);
+}
+
+/* --- Indicadores secundarios --- */
+.datos {
+    margin: 0;
+    display: grid;
+    gap: 0.45rem;
+    border-top: 1px solid var(--linea);
+    padding-top: 0.9rem;
+}
+
+.datos div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.datos dt {
+    color: var(--tinta-suave);
+    font-size: 0.92rem;
+}
+
+.datos dd {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+}
+
+.datos dd small {
+    font-weight: 400;
+    color: var(--tinta-suave);
+}
+
+
+/* ---------------------------------------------------------------------------
+   8. GRÁFICOS
+   --------------------------------------------------------------------------- */
+.titulo-seccion {
+    font-size: 1.3rem;
+    margin: 0 0 1rem;
+}
+
+.graficos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.grafico {
+    margin: 0;
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    padding: 0.75rem;
+}
+
+/* El gráfico de Wq ocupa las dos columnas: es el más importante */
+.grafico-ancho {
+    grid-column: 1 / -1;
+}
+
+.grafico-ancho img {
+    max-width: 760px;
+}
+
+.grafico img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+.grafico figcaption {
+    font-size: 0.88rem;
+    color: var(--tinta-suave);
+    padding: 0.5rem 0.5rem 0;
+    max-width: 75ch;
+}
+
+
+/* ---------------------------------------------------------------------------
+   9. TABLA Y FÓRMULAS
+   --------------------------------------------------------------------------- */
+.tabla-envoltura {
+    overflow-x: auto;     /* en celulares la tabla se desplaza de lado */
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+}
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+}
+
+.tabla th,
+.tabla td {
+    padding: 0.65rem 0.6rem;
+    text-align: right;
+    border-bottom: 1px solid var(--linea);
+    white-space: nowrap;
+}
+
+.tabla thead th {
+    white-space: normal;      /* los encabezados largos pueden partirse en dos líneas */
+    vertical-align: bottom;
+    font-size: 0.82rem;
+    color: var(--tinta-suave);
+    font-weight: 700;
+    background: var(--superficie-suave);
+}
+
+.tabla th[scope="row"],
+.tabla thead th:first-child {
+    text-align: left;
+}
+
+.tabla tbody tr:last-child th,
+.tabla tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.fila-cumple {
+    background: var(--cumple-fondo);
+}
+
+.marca-cumple {
+    color: var(--cumple);
+    margin-left: 0.3rem;
+}
+
+.subtitulo-columna {
+    display: block;
+    font-weight: 400;
+}
+
+.intervalo {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--tinta-suave);
+}
+
+.nota {
+    font-size: 0.86rem;
+    color: var(--tinta-suave);
+    margin: 0.75rem 0 2rem;
+    max-width: 80ch;
+}
+
+.formulas {
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    padding: 0.9rem 1.2rem;
+}
+
+.formulas summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.formulas-contenido dt {
+    font-weight: 700;
+    margin-top: 0.75rem;
+}
+
+.formulas-contenido dd {
+    margin: 0.2rem 0 0;
+}
+
+.formulas code {
+    font-family: inherit;
+    background: var(--superficie-suave);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+
+/* ---------------------------------------------------------------------------
+   10. PANTALLAS PEQUEÑAS
+   --------------------------------------------------------------------------- */
+
+/* Tabletas: el panel de datos pasa arriba */
+@media (max-width: 960px) {
+
+    .disposicion {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .panel-datos {
+        position: static;
+    }
+}
+
+/* Celulares: tarjetas y gráficos en una sola columna */
+@media (max-width: 720px) {
+
+    body {
+        font-size: 16px;
+    }
+
+    .encabezado h1 {
+        font-size: 1.7rem;
+    }
+
+    .escenarios,
+    .graficos {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Respeta a quien prefiere menos animaciones */
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        transition: none !important;
+    }
+}
+
+/* Tabla de comprobación: valores teóricos frente a los simulados */
+.intro-tabla {
+    color: var(--tinta-suave);
+    margin: -0.3rem 0 1rem;
+    line-height: 1.55;
+}
+.tabla-comparacion thead tr:first-child th {
+    background: #DCEBFC;
+    text-align: center;
+    color: var(--pizarra);
+}
+.tabla-comparacion thead tr:first-child th:first-child {
+    text-align: left;
+}
+.tabla-comparacion td {
+    font-variant-numeric: tabular-nums;
+}
+.fila-recomendada {
+    background: #EAF3FF;
+}
+.fila-recomendada th {
+    color: var(--pizarra);
+}
+.detalles-resultados {
+    margin-bottom: 1.6rem;
+}
+.detalles-resultados[open] > .intro-tabla {
+    padding-top: 0.9rem;
+}

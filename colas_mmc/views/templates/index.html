@@ -1,0 +1,371 @@
+{#
+=============================================================================
+  views/templates/index.html
+  ---------------------------------------------------------------------------
+  PÁGINA PRINCIPAL.
+  Tiene dos zonas:
+    1. Panel izquierdo: formulario para escribir λ y μ.
+    2. Zona derecha: resultados de los escenarios, gráficos y tabla.
+
+  Sintaxis Jinja2 que verás aquí:
+    {{ variable }}           -> imprime un valor
+    {% if ... %} {% endif %} -> condición
+    {% for ... %}            -> repetición
+    {{ valor | numero(2) }}  -> aplica un "filtro" (definido en el controlador)
+=============================================================================
+#}
+{% extends "base.html" %}
+
+{% block contenido %}
+<div class="disposicion">
+
+    {# ===================================================================
+       1) PANEL DE DATOS DE ENTRADA
+       =================================================================== #}
+    <aside class="panel-datos">
+
+        <h2>Datos del sistema</h2>
+
+        {# method="get": los datos viajan en la dirección web.
+           Así puedes recargar la página o compartir el enlace
+           y obtienes los mismos resultados. #}
+        {# data-ventanillas le dice a JavaScript qué escenarios se comparan
+           (sale de config.py, así no hay que repetirlo en el JS). #}
+        <form id="formulario" method="get" action="{{ url_for('colas.inicio') }}"
+              data-ventanillas="{{ config.VENTANILLAS_A_COMPARAR | join(',') }}" novalidate>
+
+            {# --- Unidad de tiempo de las tasas --- #}
+            <fieldset class="campo">
+                <legend>Las tasas están expresadas</legend>
+
+                <div class="selector-unidad">
+                    <label>
+                        <input type="radio" name="unidad" value="hora"
+                               {% if formulario.unidad == 'hora' %}checked{% endif %}>
+                        <span>por hora</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="unidad" value="minuto"
+                               {% if formulario.unidad == 'minuto' %}checked{% endif %}>
+                        <span>por minuto</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            {# --- Tasa de llegada λ --- #}
+            <div class="campo">
+                <label for="lambda">
+                    Tasa de llegada <span class="simbolo">λ</span>
+                </label>
+                <div class="entrada-con-unidad">
+                    <input id="lambda" name="lambda" type="text" inputmode="decimal"
+                           value="{{ '%g' % formulario['lambda'] }}" required>
+                    <span class="unidad" data-unidad-texto>estudiantes / {{ formulario.unidad }}</span>
+                </div>
+                <p class="ayuda">Cuántos estudiantes llegan en promedio.</p>
+            </div>
+
+            {# --- Tasa de atención μ --- #}
+            <div class="campo">
+                <label for="mu">
+                    Tasa de atención <span class="simbolo">μ</span>
+                </label>
+                <div class="entrada-con-unidad">
+                    <input id="mu" name="mu" type="text" inputmode="decimal"
+                           value="{{ '%g' % formulario.mu }}" required>
+                    <span class="unidad" data-unidad-texto>estudiantes / {{ formulario.unidad }}</span>
+                </div>
+                <p class="ayuda">Cuántos estudiantes atiende <strong>una</strong> ventanilla.</p>
+            </div>
+
+            {# --- Mensaje en vivo que escribe JavaScript al teclear --- #}
+            <p id="pista-estabilidad" class="pista" aria-live="polite"></p>
+
+            {# --- Mensaje de error de validación (JavaScript) --- #}
+            <p id="error-cliente" class="error-cliente" role="alert" hidden></p>
+
+            <button type="submit" id="boton-calcular" class="boton-principal">
+                Calcular escenarios
+            </button>
+        </form>
+
+        
+    </aside>
+
+
+    {# ===================================================================
+       2) ZONA DE RESULTADOS
+       =================================================================== #}
+    <section class="zona-resultados">
+
+        {# ---------- Errores enviados por el servidor ---------- #}
+        {% if errores %}
+            <div class="aviso aviso-error" role="alert">
+                <h2>Revisa los datos</h2>
+                <ul>
+                    {% for error in errores %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+
+        {% if resultados %}
+
+        {# ---------- Veredicto general ---------- #}
+        {% set rec = resultados.recomendado %}
+        <div class="veredicto {% if rec %}veredicto-ok{% else %}veredicto-mal{% endif %}">
+            {% if rec %}
+                <p class="veredicto-titulo">
+                    Abrir {{ rec.ventanillas }} ventanillas cumple la meta
+                </p>
+                <p>
+                    La espera promedio teórica es de
+                    <strong>{{ rec.wq | numero(2) }} min</strong>,
+                    dentro de la meta de {{ '%g' % resultados.meta }} minutos.
+                    Con esta configuración la utilización promedio es
+                    <strong>{{ rec.rho | porcentaje }}</strong>.
+                    {% if resultados.cumplen | length > 1 %}
+                        También cumplen:
+                        {% for c in resultados.cumplen if c != rec.ventanillas %}{{ c }}{% if not loop.last %}, {% endif %}{% endfor %}
+                        ventanillas, pero con más personal y menor utilización promedio.
+                    {% endif %}
+                </p>
+            {% else %}
+                <p class="veredicto-titulo">
+                    Ninguna configuración logra esperar {{ '%g' % resultados.meta }} minutos o menos
+                </p>
+                <p>
+                    Ninguna de las cantidades de ventanillas configuradas alcanza la meta.
+                    Se puede probar con más ventanillas o con atenciones más rápidas. 
+                </p>
+            {% endif %}
+
+            <p class="veredicto-carga">
+                Carga del sistema λ/μ = {{ resultados.carga | numero(2) }}:
+                se necesitan al menos {{ resultados.minimo_estable }} ventanillas
+                para que la fila no crezca sin límite.
+            </p>
+        </div>
+
+
+        {# ---------- Tarjetas: una por escenario ---------- #}
+        <div class="escenarios">
+            {% for e in resultados.escenarios %}
+
+            {# Clase CSS según el estado del escenario #}
+            {% if not e.estable %}
+                {% set estado = 'inestable' %}
+            {% elif e.cumple_meta %}
+                {% set estado = 'cumple' %}
+            {% else %}
+                {% set estado = 'no-cumple' %}
+            {% endif %}
+
+            <article class="escenario escenario-{{ estado }} {% if e.recomendado %}escenario-recomendado{% endif %}">
+
+                <header class="escenario-cabecera">
+                    <h3>{{ e.ventanillas }} ventanillas</h3>
+
+                    {% if e.recomendado %}
+                        <span class="insignia insignia-recomendada">Recomendada</span>
+                    {% endif %}
+                </header>
+
+                {# --- Dibujo del mostrador: ventanillas + fila de estudiantes ---
+                   Cada ventanilla se rellena según la utilización ρ.
+                   Cada punto representa (aprox.) un estudiante en la fila (Lq). #}
+                <div class="mostrador" aria-hidden="true">
+                    <div class="ventanillas">
+                        {% for _ in range(e.ventanillas) %}
+                            <span class="ventanilla"
+                                  style="--ocupacion: {{ [e.rho, 1] | min * 100 }}%"></span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="fila">
+                        {% if not e.estable %}
+                            {% for _ in range(14) %}<span class="persona"></span>{% endfor %}
+                            <span class="fila-mas">…</span>
+                        {% else %}
+                            {% set personas = (e.lq + 0.5) | int %}
+                            {% for _ in range([personas, 14] | min) %}<span class="persona"></span>{% endfor %}
+                            {% if personas > 14 %}<span class="fila-mas">+{{ personas - 14 }}</span>{% endif %}
+                            {% if personas == 0 %}<span class="fila-vacia">casi nadie espera</span>{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# --- Indicador principal: Wq --- #}
+                <div class="dato-principal">
+                    <span class="dato-etiqueta">Espera promedio en fila (W<sub>q</sub>)</span>
+                    <span class="dato-valor">
+                        {{ e.wq | numero(2) }}<small> min</small>
+                    </span>
+
+                    <span class="estado estado-{{ estado }}">
+                        {% if estado == 'cumple' %}
+                            ✓ Cumple la meta (≤ {{ '%g' % resultados.meta }} min)
+                        {% elif estado == 'no-cumple' %}
+                            ✗ Supera la meta de {{ '%g' % resultados.meta }} min
+                        {% else %}
+                            ⚠ Inestable: la fila crece sin límite
+                        {% endif %}
+                    </span>
+                </div>
+
+                {# --- Otros indicadores --- #}
+                <dl class="datos">
+                    <div>
+                        <dt>Utilización (ρ)</dt>
+                        <dd>{{ e.rho | porcentaje }}</dd>
+                    </div>
+                    <div>
+                        <dt>Sistema vacío (P<sub>0</sub>)</dt>
+                        <dd>{{ e.p0 | porcentaje(2) }}</dd>
+                    </div>
+                    <div>
+                        <dt>En fila (L<sub>q</sub>)</dt>
+                        <dd>{{ e.lq | numero(2) }} <small>estudiantes</small></dd>
+                    </div>
+                </dl>
+            </article>
+            {% endfor %}
+        </div>
+
+
+        {# ---------- Gráficos generados con matplotlib ---------- #}
+        <h2 class="titulo-seccion">Comparación gráfica</h2>
+
+        <div class="graficos">
+            <figure class="grafico grafico-ancho">
+                <img src="data:image/png;base64,{{ graficos.espera }}"
+                     alt="Gráfico de barras del tiempo de espera Wq para cada número de ventanillas, con la meta de {{ '%g' % resultados.meta }} minutos marcada.">
+                <figcaption>
+                    Las barras son el resultado teórico. El rombo es el promedio
+                    simulado y su línea vertical el intervalo de confianza del 95 %.
+                </figcaption>
+            </figure>
+
+            <figure class="grafico">
+                <img src="data:image/png;base64,{{ graficos.fila }}"
+                     alt="Gráfico de barras de la cantidad promedio de estudiantes en fila por escenario.">
+            </figure>
+
+            <figure class="grafico">
+                <img src="data:image/png;base64,{{ graficos.utilizacion }}"
+                     alt="Gráfico de barras agrupadas con la utilización y la probabilidad de sistema vacío por escenario.">
+            </figure>
+        </div>
+
+
+        {# ---------- Tabla clara para comparar teoría y simulación ---------- #}
+        <h2 class="titulo-seccion">Resultados teóricos y simulados</h2>
+        <p class="intro-tabla">
+            Los valores <strong>teóricos</strong> se obtienen con las fórmulas M/M/c.
+            Los <strong>simulados</strong> se calculan al representar llegadas y
+            atenciones aleatorias. Si son cercanos, los resultados son coherentes.
+        </p>
+
+        <div class="tabla-envoltura">
+            <table class="tabla tabla-comparacion">
+                <thead>
+                    <tr>
+                        <th scope="col" rowspan="2">Ventanillas</th>
+                        <th scope="colgroup" colspan="2">Espera W<sub>q</sub> (min)</th>
+                        <th scope="colgroup" colspan="2">Estudiantes en cola L<sub>q</sub></th>
+                        <th scope="colgroup" colspan="2">Utilización ρ</th>
+                    </tr>
+                    <tr>
+                        <th scope="col">Teórico</th><th scope="col">Simulado</th>
+                        <th scope="col">Teórico</th><th scope="col">Simulado</th>
+                        <th scope="col">Teórico</th><th scope="col">Simulado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in resultados.escenarios %}
+                    {% set s = e.simulacion %}
+                    <tr {% if e.recomendado %}class="fila-recomendada"{% endif %}>
+                        <th scope="row">{{ e.ventanillas }}{% if e.recomendado %} <span class="marca-cumple" title="Configuración recomendada">★</span>{% endif %}</th>
+                        <td>{{ e.wq | numero(3) }}</td>
+                        <td>{% if s %}{{ s.wq | numero(3) }}{% else %}—{% endif %}</td>
+                        <td>{{ e.lq | numero(3) }}</td>
+                        <td>{% if s %}{{ s.lq | numero(3) }}{% else %}—{% endif %}</td>
+                        <td>{{ e.rho | porcentaje(2) }}</td>
+                        <td>{% if s %}{{ s.rho | porcentaje(2) }}{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="nota">
+            Se utilizan {{ config.REPLICAS }} repeticiones con
+            {{ "{:,}".format(config.ESTUDIANTES_POR_REPLICA).replace(",", ".") }} estudiantes por repetición.
+            Los primeros {{ "{:,}".format(config.ESTUDIANTES_CALENTAMIENTO).replace(",", ".") }} de cada una
+            se descartan al medir. Todos los escenarios usan las mismas llegadas y duraciones de trámite.
+            Si el sistema es inestable, los indicadores teóricos W<sub>q</sub> y L<sub>q</sub>
+            no tienen valor finito y no se genera una simulación estacionaria.
+        </p>
+
+        <details class="formulas detalles-resultados">
+            <summary>Ver indicadores adicionales e intervalo de confianza</summary>
+            <p class="intro-tabla">
+                P<sub>0</sub> indica la probabilidad de que no haya estudiantes;
+                P<sub>w</sub> es la probabilidad de esperar y W es el tiempo total
+                en el sistema. El intervalo del 95 % muestra la variación estimada
+                del tiempo de espera entre las repeticiones.
+            </p>
+            <div class="tabla-envoltura">
+                <table class="tabla">
+                    <thead><tr>
+                        <th scope="col">Ventanillas</th>
+                        <th scope="col">P<sub>0</sub></th>
+                        <th scope="col">P<sub>w</sub></th>
+                        <th scope="col">W total</th>
+                        <th scope="col">Intervalo del 95 % de W<sub>q</sub> simulado</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for e in resultados.escenarios %}
+                        <tr>
+                            <th scope="row">{{ e.ventanillas }}</th>
+                            <td>{{ e.p0 | porcentaje(2) }}</td>
+                            <td>{{ e.pw | porcentaje(2) }}</td>
+                            <td>{{ e.w | numero(3) }} min</td>
+                            <td>{% if e.simulacion %}
+                                {{ e.simulacion.wq_min | numero(3) }} – {{ e.simulacion.wq_max | numero(3) }} min
+                                {% else %}—{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
+
+        {# ---------- Explicación de las fórmulas ---------- #}
+        <details class="formulas">
+            <summary>¿Cómo se calculan estos indicadores?</summary>
+
+            <div class="formulas-contenido">
+                <p>Con <em>a</em> = λ/μ (carga) y <em>c</em> ventanillas:</p>
+                <dl>
+                    <dt>Utilización</dt>
+                    <dd><code>ρ = λ / (c · μ)</code> — debe ser menor que 1.</dd>
+
+                    <dt>Sistema vacío</dt>
+                    <dd><code>P₀ = [ Σ<sub>n=0..c−1</sub> aⁿ/n! + a<sup>c</sup> / (c! · (1 − ρ)) ]⁻¹</code></dd>
+
+                    <dt>Estudiantes en fila</dt>
+                    <dd><code>Lq = P₀ · a<sup>c</sup> · ρ / (c! · (1 − ρ)²)</code></dd>
+
+                    <dt>Espera en fila</dt>
+                    <dd><code>Wq = Lq / λ</code> (Ley de Little). Con λ por minuto, Wq sale en minutos.</dd>
+                </dl>
+            </div>
+        </details>
+
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
